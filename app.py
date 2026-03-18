@@ -27,7 +27,6 @@ if 'locais' not in st.session_state:
 # --- PAINEL LATERAL: UPLOAD E CONTROLES ---
 with st.sidebar:
     st.header("📂 Ingestão de Dados")
-    # A Mágica do Upload: Lê os arquivos direto do navegador do usuário
     arquivos_up = st.file_uploader("Arraste os relatórios do Sumaresat aqui", type=['csv', 'xls', 'xlsx'], accept_multiple_files=True)
 
 # --- MOTOR DE PROCESSAMENTO EM MEMÓRIA ---
@@ -66,7 +65,7 @@ def processar_arquivos(arquivos_carregados):
     df = df.rename(columns=colunas_map)
     
     if 'DataHora' not in df.columns:
-        return pd.DataFrame() # Falha silenciosa controlada se o arquivo for lixo
+        return pd.DataFrame() 
     
     df['DataHora'] = pd.to_datetime(df['DataHora'], dayfirst=True, errors='coerce')
     for col in ['Latitude', 'Longitude', 'Velocidade']:
@@ -101,13 +100,12 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("📅 Filtros de Tempo")
     
-    # Filtro 1: Calendário (Range de Datas)
+    # Filtro 1: Calendário
     min_data = df_frota['DataHora'].dt.date.min()
     max_data = df_frota['DataHora'].dt.date.max()
     datas_selecionadas = st.date_input("Período de Análise", [min_data, max_data], min_value=min_data, max_value=max_data)
     
     # Filtro 2: Dias da Semana
-    dias_disponiveis = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     dias_nomes_br = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
     dias_selecionados = st.multiselect("Dias da Semana", dias_nomes_br, default=dias_nomes_br)
     
@@ -149,21 +147,10 @@ with st.sidebar:
     if st.button("🖨️ Gerar Relatório PDF", use_container_width=True):
         st.components.v1.html("<script>window.print()</script>", height=0)
 
-# --- FILTRAGEM DOS DADOS ---
+# --- APLICAÇÃO DOS FILTROS ---
 df_veiculo = df_frota[df_frota['Placa'] == veiculo_selecionado].copy()
 
-# GARANTIR ORDEM CRONOLÓGICA (Crucial para o cálculo de tempo)
-df_veiculo = df_veiculo.sort_values('DataHora')
-
-# MOTOR DE DETECÇÃO DE VIAGENS (Quebra a linha fantasma)
-# Calcula a diferença de tempo entre uma linha e a linha anterior
-df_veiculo['Tempo_Ocioso'] = df_veiculo['DataHora'].diff()
-# Se o tempo ocioso for maior que 10 minutos (rastreador desligado), marca como início de uma nova viagem
-df_veiculo['Nova_Viagem'] = df_veiculo['Tempo_Ocioso'] > pd.Timedelta(minutes=10)
-# Cria um ID único para cada viagem somando as quebras
-df_veiculo['ID_Viagem'] = df_veiculo['Nova_Viagem'].cumsum()
-
-# Aplica o filtro do calendário (lida com o fato de o usuário escolher só 1 dia ou um range)
+# Aplica o filtro do calendário
 if len(datas_selecionadas) == 2:
     start_date, end_date = datas_selecionadas
     df_veiculo = df_veiculo[(df_veiculo['DataHora'].dt.date >= start_date) & (df_veiculo['DataHora'].dt.date <= end_date)]
@@ -171,7 +158,7 @@ elif len(datas_selecionadas) == 1:
     start_date = datas_selecionadas[0]
     df_veiculo = df_veiculo[df_veiculo['DataHora'].dt.date == start_date]
 
-# Aplica o filtro de dias da semana convertendo a escolha em BR para os índices numéricos
+# Aplica o filtro de dias da semana
 indices_dias = [dias_nomes_br.index(dia) for dia in dias_selecionados]
 df_veiculo = df_veiculo[df_veiculo['Dia_Semana'].isin(indices_dias)]
 
@@ -180,11 +167,16 @@ if mostrar_apenas_infracoes:
 if mostrar_apenas_fora_hora:
     df_veiculo = df_veiculo[df_veiculo['Fora_Expediente'] == True]
 
+# --- MOTOR DE DETECÇÃO DE VIAGENS (Evita linhas fantasmas) ---
+df_veiculo = df_veiculo.sort_values('DataHora')
+df_veiculo['Tempo_Ocioso'] = df_veiculo['DataHora'].diff()
+df_veiculo['Nova_Viagem'] = df_veiculo['Tempo_Ocioso'] > pd.Timedelta(minutes=10)
+df_veiculo['ID_Viagem'] = df_veiculo['Nova_Viagem'].cumsum()
+
 # --- RENDERIZAÇÃO PRINCIPAL ---
 st.subheader(f"Análise de Rota: {veiculo_selecionado}")
 
 col1, col2, col3 = st.columns(3)
-# Proteção contra dataframe vazio após os filtros
 vel_max = df_veiculo['Velocidade'].max() if not df_veiculo.empty else 0
 inf_sum = df_veiculo['Infracao_Velocidade'].sum() if not df_veiculo.empty else 0
 fora_sum = df_veiculo['Fora_Expediente'].sum() if not df_veiculo.empty else 0
@@ -232,9 +224,9 @@ if not df_veiculo.empty:
     )
     st.plotly_chart(fig_mapa, use_container_width=True)
     
-   st.subheader("Perfil Cinemático de Velocidade")
+    st.subheader("Perfil Cinemático de Velocidade")
     
-    # O Passo 2 entra aqui: adicionamos o line_group para separar as viagens
+    # Motor implementado na função px.line para seccionar o gráfico nos tempos ociosos
     fig_linha = px.line(
         df_veiculo, 
         x='DataHora', 
@@ -243,9 +235,7 @@ if not df_veiculo.empty:
         template="plotly_white"
     )
     
-    # Ocultar a legenda dos IDs das viagens para manter o relatório limpo
     fig_linha.update_traces(showlegend=False)
-    
     fig_linha.add_hline(y=115, line_dash="dash", line_color="red", annotation_text="Limite de Segurança (115 km/h)")
     st.plotly_chart(fig_linha, use_container_width=True)
 
