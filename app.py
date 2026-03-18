@@ -149,8 +149,19 @@ with st.sidebar:
     if st.button("🖨️ Gerar Relatório PDF", use_container_width=True):
         st.components.v1.html("<script>window.print()</script>", height=0)
 
-# --- APLICAÇÃO DOS FILTROS ---
+# --- FILTRAGEM DOS DADOS ---
 df_veiculo = df_frota[df_frota['Placa'] == veiculo_selecionado].copy()
+
+# GARANTIR ORDEM CRONOLÓGICA (Crucial para o cálculo de tempo)
+df_veiculo = df_veiculo.sort_values('DataHora')
+
+# MOTOR DE DETECÇÃO DE VIAGENS (Quebra a linha fantasma)
+# Calcula a diferença de tempo entre uma linha e a linha anterior
+df_veiculo['Tempo_Ocioso'] = df_veiculo['DataHora'].diff()
+# Se o tempo ocioso for maior que 10 minutos (rastreador desligado), marca como início de uma nova viagem
+df_veiculo['Nova_Viagem'] = df_veiculo['Tempo_Ocioso'] > pd.Timedelta(minutes=10)
+# Cria um ID único para cada viagem somando as quebras
+df_veiculo['ID_Viagem'] = df_veiculo['Nova_Viagem'].cumsum()
 
 # Aplica o filtro do calendário (lida com o fato de o usuário escolher só 1 dia ou um range)
 if len(datas_selecionadas) == 2:
@@ -221,9 +232,22 @@ if not df_veiculo.empty:
     )
     st.plotly_chart(fig_mapa, use_container_width=True)
     
-    st.subheader("Perfil Cinemático de Velocidade")
-    fig_linha = px.line(df_veiculo, x='DataHora', y='Velocidade', template="plotly_white")
+   st.subheader("Perfil Cinemático de Velocidade")
+    
+    # O Passo 2 entra aqui: adicionamos o line_group para separar as viagens
+    fig_linha = px.line(
+        df_veiculo, 
+        x='DataHora', 
+        y='Velocidade', 
+        line_group='ID_Viagem', 
+        template="plotly_white"
+    )
+    
+    # Ocultar a legenda dos IDs das viagens para manter o relatório limpo
+    fig_linha.update_traces(showlegend=False)
+    
     fig_linha.add_hline(y=115, line_dash="dash", line_color="red", annotation_text="Limite de Segurança (115 km/h)")
     st.plotly_chart(fig_linha, use_container_width=True)
+
 else:
     st.info("Nenhum dado encontrado para exibir. Verifique os filtros de data e equipamento selecionados.")
