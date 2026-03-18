@@ -110,7 +110,7 @@ with st.sidebar:
     dias_selecionados = st.multiselect("Dias da Semana", dias_nomes_br, default=dias_nomes_br)
     
     st.markdown("---")
-    st.subheader("📍 Frentes de Obra e Locais")
+    st.subheader("📍 Frentes de Obra e Locais de interesse")
     
     with st.expander("➕ Adicionar Novo Local", expanded=False):
         novo_nome = st.text_input("Nome da Obra/Local")
