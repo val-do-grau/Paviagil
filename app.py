@@ -217,7 +217,7 @@ if not df_veiculo.empty:
         hoverinfo='text', name='Registro GPS'
     ))
 
-   fig_mapa.update_layout(
+fig_mapa.update_layout(
         uirevision='mapa_travado', # <--- A MÁGICA DE ENGENHARIA ENTRA AQUI
         mapbox_style="carto-positron", 
         mapbox_zoom=13,
@@ -225,6 +225,8 @@ if not df_veiculo.empty:
         margin={"r":0,"t":0,"l":0,"b":0}, 
         showlegend=False
     )
+
+    st.plotly_chart(fig_mapa, use_container_width=True)
     st.plotly_chart(fig_mapa, use_container_width=True)
     st.plotly_chart(fig_mapa, use_container_width=True)
     
