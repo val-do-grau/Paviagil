@@ -110,7 +110,7 @@ with st.sidebar:
     dias_selecionados = st.multiselect("Dias da Semana", dias_nomes_br, default=dias_nomes_br)
     
     st.markdown("---")
-    st.subheader("📍 Frentes de Obra e Locais de interesse")
+    st.subheader("📍 Frentes de Obra e Locais")
     
     with st.expander("➕ Adicionar Novo Local", expanded=False):
         novo_nome = st.text_input("Nome da Obra/Local")
@@ -218,7 +218,7 @@ if not df_veiculo.empty:
     ))
 
     fig_mapa.update_layout(
-        uirevision='mapa_travado', # <--- A MÁGICA DE ENGENHARIA ENTRA AQUI
+        uirevision='mapa_travado',
         mapbox_style="carto-positron", 
         mapbox_zoom=13,
         mapbox_center={"lat": df_veiculo['Latitude'].mean(), "lon": df_veiculo['Longitude'].mean()},
@@ -226,12 +226,9 @@ if not df_veiculo.empty:
         showlegend=False
     )
     st.plotly_chart(fig_mapa, use_container_width=True)
-    st.plotly_chart(fig_mapa, use_container_width=True)
-    st.plotly_chart(fig_mapa, use_container_width=True)
     
     st.subheader("Perfil Cinemático de Velocidade")
     
-    # Motor implementado na função px.line para seccionar o gráfico nos tempos ociosos
     fig_linha = px.line(
         df_veiculo, 
         x='DataHora', 
