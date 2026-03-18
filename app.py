@@ -217,11 +217,15 @@ if not df_veiculo.empty:
         hoverinfo='text', name='Registro GPS'
     ))
 
-    fig_mapa.update_layout(
-        mapbox_style="carto-positron", mapbox_zoom=13,
+   fig_mapa.update_layout(
+        uirevision='mapa_travado', # <--- A MÁGICA DE ENGENHARIA ENTRA AQUI
+        mapbox_style="carto-positron", 
+        mapbox_zoom=13,
         mapbox_center={"lat": df_veiculo['Latitude'].mean(), "lon": df_veiculo['Longitude'].mean()},
-        margin={"r":0,"t":0,"l":0,"b":0}, showlegend=False
+        margin={"r":0,"t":0,"l":0,"b":0}, 
+        showlegend=False
     )
+    st.plotly_chart(fig_mapa, use_container_width=True)
     st.plotly_chart(fig_mapa, use_container_width=True)
     
     st.subheader("Perfil Cinemático de Velocidade")
