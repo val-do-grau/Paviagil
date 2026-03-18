@@ -76,7 +76,6 @@ def processar_arquivos(arquivos_carregados):
     df = df[(df['Latitude'] != 0) & (df['Longitude'] != 0)]
     
     df['Dia_Semana'] = df['DataHora'].dt.dayofweek
-    df['Nome_Dia'] = df['DataHora'].dt.day_name(locale='pt_BR.utf8').str.capitalize() # Tenta PT-BR, fallback para inglês
     df['Hora_Int'] = df['DataHora'].dt.hour
     df['Infracao_Velocidade'] = df['Velocidade'] > 115
     df['Fora_Expediente'] = (df['Hora_Int'] < 5) | (df['Hora_Int'] >= 19) | (df['Dia_Semana'] > 4)
